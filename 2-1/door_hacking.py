@@ -3,11 +3,11 @@ import string
 import multiprocessing
 import time
 from datetime import datetime
-import os
+import io
 
 # 압축 파일과 결과 저장 파일명
-ZIP_FILE = '2-1/emergency_storage_key.zip'
-OUTPUT_FILE = '2-1/password.txt'
+ZIP_FILE = 'emergency_storage_key.zip'
+OUTPUT_FILE = 'password.txt'
 
 # 암호는 소문자+숫자로 된 6자리
 CHARSET = string.ascii_lowercase + string.digits
@@ -26,6 +26,8 @@ LOG_INTERVAL = 100000
 # 시작 시간과 전체 시도 횟수를 저장할 공유 변수
 start_time = time.time()
 attempt_counter = multiprocessing.Value('i', 0)
+
+# found = Value('b', False) # 비번 찾았는지 여부를 공유하는 변수
 
 
 # 주어진 인덱스를 CHARSET 기준의 패스워드 문자열로 변환하는 함수
@@ -48,20 +50,28 @@ def index_to_password(index):
 # 하나의 프로세스가 주어진 범위 내의 모든 인덱스에 대해 패스워드를 생성하고 해제를 시도하는 함수
 def try_password_range(start, end):
     try:
-        with zipfile.ZipFile(ZIP_FILE) as zf:
-            # 주어진 범위 내의 모든 인덱스에 대해 패스워드를 생성
-            # 0 -> 'aaaaaa', 1 -> 'aaaaab', ..., 999999 -> 'zzzzzz'
-            for idx in range(start, end):
-                password = index_to_password(idx)
+        # zip 파일을 메모리로 로딩
+        with open(ZIP_FILE, 'rb') as f:
+            zip_data = io.BytesIO(f.read())
 
-                # 잠금 안하면 동시 접근 시 충돌 발생, 암호 시도 횟수 카운트
-                with attempt_counter.get_lock():
-                    attempt_counter.value += 1
-                    count = attempt_counter.value
+        # zip 파일 열기
+        zf = zipfile.ZipFile(zip_data, 'r')
 
-                try:
-                    # 비밀번호 bytes로 변환하여 압축 해제 시도
-                    zf.extractall(pwd=password.encode())
+        fname = zf.namelist()[0] # zip 파일 첫번째 파일 이름
+        
+        # 주어진 범위 내의 모든 인덱스에 대해 패스워드를 생성
+        # 0 -> 'aaaaaa', 1 -> 'aaaaab', ..., 999999 -> 'zzzzzz'
+        for idx in range(start, end):
+            password = index_to_password(idx)
+
+            # 잠금 안하면 동시 접근 시 충돌 발생, 암호 시도 횟수 카운트
+            with attempt_counter.get_lock():
+                attempt_counter.value += 1
+                count = attempt_counter.value
+
+            try:
+                with zf.open(fname, 'r', pwd=password.encode()) as file:
+                    file.read(1) # 파일이 정상인지 최소 1바이트 읽기
 
                     duration = time.time() - start_time
                     print('\n[+] 암호 해제 성공!')
@@ -73,11 +83,11 @@ def try_password_range(start, end):
                     with open(OUTPUT_FILE, 'w') as f:
                         f.write(password)
 
-                    os._exit(0)
+                    return password
 
-                except Exception:
-                    if count % LOG_INTERVAL == 0:
-                        print(f'[시도 {count}회] 경과 시간: {time.time() - start_time:.2f}초')
+            except Exception:
+                if count % LOG_INTERVAL == 0:
+                    print(f'[시도 {count}회] 경과 시간: {time.time() - start_time:.2f}초')
 
     except Exception as e:
         print(f'[!] 오류 발생 (범위 {start}~{end}): {e}')
@@ -85,7 +95,7 @@ def try_password_range(start, end):
 
 # 멀티코어를 활용하여 Brute Force 방식으로 병렬 처리하는 함수
 def unlock_zip():
-    print(f'멀티코어 해킹 시작 (사용 코어 수: {PROCESS_COUNT})')
+    print(f'multiprocessing 해킹 시작 (사용 코어 수: {PROCESS_COUNT})')
     print(f'시작 시간: {datetime.fromtimestamp(start_time).strftime("%Y-%m-%d %H:%M:%S")}')
 
     # 각 프로세스에 할당할 범위를 계산
