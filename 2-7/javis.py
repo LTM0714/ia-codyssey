@@ -65,15 +65,20 @@ def list_recordings_by_date(start_date_str, end_date_str):
         found = False
 
         for file_name in os.listdir(RECORD_DIR):
-            if file_name.endswith('.wav'):
-                date_str = file_name.split('_')[0]  # 'YYYYMMDD_HHMMSS.wav' → 'YYYYMMDD'
-                try:
-                    file_date = datetime.strptime(date_str, '%Y%m%d')
-                    if start_date <= file_date <= end_date:
-                        print(' -', file_name)
-                        found = True
-                except ValueError:
-                    continue  # 날짜 형식이 아닌 파일은 건너뜀
+            if not file_name.endswitch('.wav'):
+                continue
+            if '_' not in file_name:
+                continue    # 형식이 이상한 파일은 무시
+                
+            date_str = file_name.split('_')[0]  # 'YYYYMMDD_HHMMSS.wav' → 'YYYYMMDD'
+            
+            try:
+                file_date = datetime.strptime(date_str, '%Y%m%d')
+                if start_date <= file_date <= end_date:
+                    print(' -', file_name)
+                    found = True
+            except ValueError:
+                continue  # 날짜 형식이 아닌 파일은 건너뜀
 
         if not found:
             print('해당 날짜 범위에 녹음 파일이 없습니다.')
