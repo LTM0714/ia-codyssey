@@ -1,6 +1,9 @@
+# pip install SpeechRecognition PyAudio
+
 import os
 import speech_recognition as sr     # 음성 인식 라이브러리
 from datetime import datetime
+import pyaudio                      # 오디오 장치 정보 확인용
 
 class JavisRecorder:
     def __init__(self):
@@ -9,14 +12,26 @@ class JavisRecorder:
 
     # 1-1. 음성 녹음
     def record_audio(self):
+        while True:
+            try:
+                duration = float(input('\n녹음할 시간(초, 예: 5)을 입력하세요: '))
+                if duration <= 0:
+                    print('1초 이상의 양의 정수를 입력하세요.\n')
+                    continue
+                break
+            except ValueError:
+                print('유효한 숫자를 입력하세요.\n')
+
         # 마이크를 오디오 소스로 사용
         with sr.Microphone() as source:
-            print('\n음성 녹음을 시작하려면 Enter 키를 누르세요.')
-            input()        
-            print('녹음 시작...')
-            self.r.adjust_for_ambient_noise(source)  # 주변 소음 보정
-            audio_data = self.r.listen(source, timeout=5, phrase_time_limit=10)  # 5초 동안 음성 입력 대기, 최대 10초까지 녹음
-            print('녹음 완료!')
+            print('녹음 시작... Ctrl+C로 중지할 수 있습니다.')
+            try:
+                self.r.adjust_for_ambient_noise(source)  # 주변 소음 보정
+                audio_data = self.r.record(source, duration=duration)   # duration(초)까지 녹음
+                print('녹음 완료!')
+            except KeyboardInterrupt:
+                print('녹음이 중단되었습니다.')
+                return self.record_audio()  # 재귀적으로 다시 녹음 시도
 
             return audio_data
 
@@ -125,6 +140,28 @@ class JavisRecorder:
         if not found:
             print(f'키워드 "{keyword}"를 포함하는 내용은 없습니다.')
 
+    # 4. 사용 가능한 오디오 장치 정보 출력
+    def device_info(self):
+        print('\n사용 가능한 오디오 장치:')
+        audio = pyaudio.PyAudio()
+        
+        for i in range(audio.get_device_count()):
+            info = audio.get_device_info_by_index(i)
+            # 입력(녹음) 가능한 장치만 필터링
+            if info['maxInputChannels'] > 0:
+                '''
+                1 채널: 일반적인 모노(Mono) 마이크 (한쪽에서만 소리를 받음)
+                2 채널: 스테레오(Stereo) 마이크 (왼쪽/오른쪽 두 방향에서 소리를 받음)
+                4, 6, 8 채널 이상: 고급 마이크 장비, 믹서기 등에서 여러 입력을 동시에 받을 수 있음
+                '''
+                print(f' - [{i}] {info['name']} (채널: {info['maxInputChannels']})')
+
+        # 기본 입력 장치 출력
+        default_index = audio.get_default_input_device_info()['index']
+        default_name = audio.get_default_input_device_info()['name']
+        print(f'\n[기본 입력 장치] → [{default_index}] {default_name}')
+
+        audio.terminate()   # PyAudio 객체 종료
 
 def main():
     jvr = JavisRecorder()  # JavisRecorder 객체 생성
@@ -134,6 +171,7 @@ def main():
         print('1. 음성 녹음 및 저장')
         print('2. 날짜 범위로 녹음 파일 목록 보기')
         print('3. 키워드로 CSV 내용 검색')
+        print('4. 사용 가능한 오디오 장치 정보 보기')
         print('0. 종료')
         choice = input('선택: ')
 
@@ -149,6 +187,8 @@ def main():
         elif choice == '3':
             keyword = input('검색할 키워드 입력: ')
             jvr.search_keyword_in_csv(keyword)      # 키워드로 CSV 파일 안의 내용용 검색
+        elif choice == '4':
+            jvr.device_info()                       # 사용 가능한 오디오 장치 정보 출력
         elif choice == '0':
             print('프로그램 종료.\n')
             break
