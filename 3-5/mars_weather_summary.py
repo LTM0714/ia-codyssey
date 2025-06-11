@@ -29,8 +29,8 @@ def load_csv_and_insert(csv_path, db: MySQLHelper):
 if __name__ == '__main__':
     db = MySQLHelper(
         host='localhost',
-        user='root',
-        password='root',
+        user='your_user',
+        password='your_pwd',
         database='mars_weather'
     )
     if db.connection:
