@@ -24,5 +24,5 @@
  
 |구분|문제|수행과제|주제 및 내용|
 |-|---|-----|-----|
-|0|||GitHub, Discode, VScode, codyssey<br>- GitHub계정, 프로젝트 저장소 만들기
-|1_1|
+|0|||GitHub, Discode, VScode, codyssey<br>- GitHub 계정, 프로젝트 저장소 만들기<br>- discord 계정 만들기<br>- VScode 활용 코딩 환경 이해하기
+|1_1|미션 컴퓨터를 보수하고, 사고원인을 파악해보자|Python을 설치하고, 로그파일의 내용을 출력한다|개발환경 구성, 파일 입출력을 통한 파크다운 문서 작성<br>- function, 예외 처리, 파일 입출력<br>- markdown 이해, UTF-8 이해
