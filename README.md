@@ -24,6 +24,5 @@
  
 |구분|문제|수행과제|주제 및 내용|
 |-|---|-----|-----|
-|0|||GitHub, Discode, VScode, codyssey\n- GitHub계정, 프로젝트 저장소 만들기
-"
+|0|||GitHub, Discode, VScode, codyssey<br>- GitHub계정, 프로젝트 저장소 만들기
 |1_1|
